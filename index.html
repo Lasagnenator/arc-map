@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<head>
+<meta charset="utf-8">
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  background: #151520;
+}
+
+#titlediv {
+  font-family: monospace;
+  text-align: center;
+  font-size:48px;
+  position:fixed;
+  width:100%;
+  height:50px;
+  color:rgb(156, 156, 156);
+  padding:5px;
+  top:0px;
+  overflow-y: auto;
+}
+
+#worldmap {
+  position: absolute;
+  height:100%;
+  width:100%;
+}
+
+#about {
+  text-align:center;
+  width:100%;
+  bottom:0px;
+  position:absolute;
+  color: rgb(131, 131, 131);
+}
+</style>
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/d3.geo.projection.v0.min.js"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="https://datamaps.github.io/scripts/datamaps.world.min.js?v=1"></script>
+
+</head>
+
+<body>
+    <center><div id="worldmap"></div></center>
+
+    <div id="about">
+        <p>
+            Made with love and care by Matthew Richards.
+            <br/>
+            Based on <a href="https://github.com/hrbrmstr/pewpew">hrbrmstr/pewpew</a>
+        </p>
+    </div>
+
+    <!--Set up the map-->
+    <script id="mapscript">
+
+var map = new Datamap({
+
+scope: 'world',
+element: document.getElementById('worldmap'),
+projection: 'mercator',
+// The most sane one according to cartographiers is winkel3 but mercator is more familiar.
+
+fills: { defaultFill: '#242436', boomFill: '#6f1010'},
+// This is the country fill color.
+
+// These dimensions are quite arbtrary. Change to fit your screen.
+// 4:3 ratio of width:height seems to be fine.
+width: 1200,
+height: 900,
+
+geographyConfig: {
+  dataUrl: null,
+  hideAntarctica: true, // Do you really need Antarctica?
+  borderWidth: 0.75, // Country border width
+  borderColor: '#afafaf', // Country border color
+  popupTemplate: function(geography, data) {
+    return '<div class="hoverinfo" style="color:white;background:#151520">' +
+           geography.properties.name + '</div>';
+  },
+  popupOnHover: true, // Simple country label on hover.
+  highlightOnHover: false,
+  highlightFillColor: 'black',
+  highlightBorderColor: 'rgba(250, 15, 160, 0.2)',
+  highlightBorderWidth: 2
+},
+
+bubblesConfig: {
+    borderWidth: 1,
+    borderOpacity: 0.75,
+    borderColor: '#af3030',
+    popupOnHover: true,
+    radius: null,
+    popupTemplate: function(geography, data) {
+        return '<div class="hoverinfo" style="color:white;background:#151520">BOOM</div>';
+    },
+    fillOpacity: 0.5,
+    animate: true,
+    highlightOnHover: true,
+    highlightFillColor: '#af0000',
+    highlightBorderColor: '#af0000',
+    highlightBorderWidth: 1,
+    highlightBorderOpacity: 1,
+    highlightFillOpacity: 0.85,
+    exitDelay: 100,
+    key: JSON.stringify
+}
+
+});
+    </script>
+
+    <!--Read data, build in advance with convert_country.py-->
+    <script src="cnlatlong.js"></script>
+
+    <!--Set up the event loop-->
+    <script>
+        const hitVisible = 2000; // Milliseconds visible.
+        const hitColor = "red"; // Hit line color.
+        const hitWidth = 2; // Hit line width.
+        const hitSpeed = 1000; // How long (ms) it takes a hit to travel.
+        const hitFadeOut = 1000; // How long to fade out (ms) after deletion scheduled.
+        const explosionRadius = 7; // How big to make the destination explosion.
+        const explosionOpacity = 0.5; // Opacity of the destination explosion.
+        let counter = 0;
+
+        // Events are added to the end of the array.
+        // They are removed from the front after a set delay.
+        // Calling map.arc(hits, ...) will keep the map updated.
+        hits = [];
+        boom = [];
+
+        function drawMap() {
+            map.arc(hits, {strokeWidth: hitWidth, strokeColor: hitColor, animationSpeed: hitSpeed});
+            map.bubbles(boom);
+        }
+
+        // https://stackoverflow.com/a/55466989
+        function removeArc(id) {
+            var all = d3.selectAll('path.datamaps-arc');
+            var sel = all.filter(function(data) {
+                return data.id === id;
+            });
+            sel.transition().duration(hitFadeOut).style("opacity", 0).remove();
+            setTimeout(() => {hits.shift();drawMap();}, hitFadeOut);
+        };
+
+        function removeBubble(id) {
+            var all = d3.selectAll('path.datamaps-bubble');
+            var sel = all.filter(function(data) {
+                return data.id === id;
+            });
+            sel.transition().duration(hitFadeOut).style("fillOpacity", 0).remove();
+            setTimeout(() => {boom.shift();drawMap();}, hitFadeOut);
+        }
+
+        function sendHit(start, end) {
+            hit_id = counter++;
+            arc = {
+                origin: {latitude: start.lat, longitude: start.long},
+                destination: {latitude: end.lat, longitude: end.long},
+                id: hit_id
+            };
+            hits.push(arc);
+
+            explosion = {
+                latitude: end.lat, longitude: end.long,
+                radius: explosionRadius, fillOpacity: explosionOpacity,
+                fillKey: 'boomFill', id: hit_id
+            };
+            boom.push(explosion);
+
+            setTimeout(() => {
+                removeArc(hit_id);
+                removeBubble(hit_id);
+            }, hitVisible);
+
+            drawMap();
+        }
+
+        function sendHitC2C(start, end) {
+            start = cn_to_coord(start);
+            end = cn_to_coord(end);
+            sendHit(start, end);
+        }
+
+
+    </script>
+
+    <!--Get started-->
+    <script>
+
+    </script>
+</body>
+
+</html>
