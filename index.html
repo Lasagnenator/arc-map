@@ -157,6 +157,7 @@ bubblesConfig: {
         }
 
         function sendHit(start, end) {
+            if (document.hidden) return;
             hit_id = counter++;
             arc = {
                 origin: {latitude: start.lat, longitude: start.long},
