@@ -2,7 +2,7 @@
 Uses the legacy Maxmind dataset for doing location lookups.
 Dated 2016-Nov-05 from the wayback machine.
 https://web.archive.org/web/20161105102242/http://dev.maxmind.com/geoip/legacy/geolite/
-The page is no longer available on the internet and so the license requirement that comes with it can no longer be adequately met.
+The page is no longer freely available on the internet and so the license requirement that comes with it can no longer be adequately met.
 
 This product includes GeoLite data created by MaxMind, available from
 <a href="http://www.maxmind.com">http://www.maxmind.com</a>.
